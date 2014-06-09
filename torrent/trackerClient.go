@@ -61,7 +61,7 @@ func startTrackerClient(dialer Dialer, announce string, announceList [][]string,
 
 	go func() {
 		for report := range recentReports {
-			tr := queryTrackers(dialer, announceList, report)
+			tr := QueryTrackers(dialer, announceList, report)
 			if tr != nil {
 				trackerInfoChan <- tr
 			}
@@ -88,11 +88,11 @@ func shuffleAnnounceListLevel(level []string) (shuffled []string) {
 	return
 }
 
-func queryTrackers(dialer Dialer, announceList [][]string, report ClientStatusReport) (tr *TrackerResponse) {
+func QueryTrackers(dialer Dialer, announceList [][]string, report ClientStatusReport) (tr *TrackerResponse) {
 	for _, level := range announceList {
 		for i, tracker := range level {
 			var err error
-			tr, err = queryTracker(dialer, report, tracker)
+			tr, err = QueryTracker(dialer, report, tracker)
 			if err == nil {
 				// Move successful tracker to front of slice for next announcement
 				// cycle.
@@ -106,7 +106,7 @@ func queryTrackers(dialer Dialer, announceList [][]string, report ClientStatusRe
 	return
 }
 
-func queryTracker(dialer Dialer, report ClientStatusReport, trackerUrl string) (tr *TrackerResponse, err error) {
+func QueryTracker(dialer Dialer, report ClientStatusReport, trackerUrl string) (tr *TrackerResponse, err error) {
 	u, err := url.Parse(trackerUrl)
 	if err != nil {
 		log.Println("Error: Invalid announce URL(", trackerUrl, "):", err)
@@ -116,9 +116,9 @@ func queryTracker(dialer Dialer, report ClientStatusReport, trackerUrl string) (
 	case "http":
 		fallthrough
 	case "https":
-		return queryHTTPTracker(dialer, report, u)
+		return QueryHTTPTracker(dialer, report, u)
 	case "udp":
-		return queryUDPTracker(report, u)
+		return QueryUDPTracker(report, u)
 	default:
 		errorMessage := fmt.Sprintf("Unknown scheme %v in %v", u.Scheme, trackerUrl)
 		log.Println(errorMessage)
@@ -126,7 +126,7 @@ func queryTracker(dialer Dialer, report ClientStatusReport, trackerUrl string) (
 	}
 }
 
-func queryHTTPTracker(dialer Dialer, report ClientStatusReport, u *url.URL) (tr *TrackerResponse, err error) {
+func QueryHTTPTracker(dialer Dialer, report ClientStatusReport, u *url.URL) (tr *TrackerResponse, err error) {
 	uq := u.Query()
 	uq.Add("info_hash", report.InfoHash)
 	uq.Add("peer_id", report.PeerId)
@@ -134,7 +134,7 @@ func queryHTTPTracker(dialer Dialer, report ClientStatusReport, u *url.URL) (tr 
 	uq.Add("uploaded", strconv.FormatUint(report.Uploaded, 10))
 	uq.Add("downloaded", strconv.FormatUint(report.Downloaded, 10))
 	uq.Add("left", strconv.FormatUint(report.Left, 10))
-	uq.Add("compact", "1")
+	uq.Add("compact", "0")
 
 	// Don't report IPv6 address, the user might prefer to keep
 	// that information private when communicating with IPv4 hosts.
@@ -188,7 +188,7 @@ func findLocalIPV6AddressFor(hostAddr string) (local string, err error) {
 	return
 }
 
-func queryUDPTracker(report ClientStatusReport, u *url.URL) (tr *TrackerResponse, err error) {
+func QueryUDPTracker(report ClientStatusReport, u *url.URL) (tr *TrackerResponse, err error) {
 	serverAddr, err := net.ResolveUDPAddr("udp", u.Host)
 	if err != nil {
 		return
