@@ -350,7 +350,7 @@ func getAnnouncementFromUDPTracker(con *net.UDPConn, connectionID uint64, report
 		return
 	}
 
-	const peerRequestCount = 10
+	const peerRequestCount = 25
 	var numWant uint32 = peerRequestCount
 	err = binary.Write(announcementRequest, binary.BigEndian, numWant)
 	if err != nil {
